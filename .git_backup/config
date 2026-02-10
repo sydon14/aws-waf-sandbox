@@ -1,0 +1,14 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	ignorecase = true
+	precomposeunicode = true
+[branch "main"]
+	vscode-merge-base = origin/main
+	remote = origin
+	merge = refs/heads/main
+[remote "origin"]
+	url = git@github.com-sydon14:sydon14/aws-waf-sandbox.git
+	fetch = +refs/heads/*:refs/remotes/origin/*

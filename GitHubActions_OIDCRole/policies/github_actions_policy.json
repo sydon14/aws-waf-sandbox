@@ -1,0 +1,37 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "TerraformStateAccess",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject",
+                "s3:ListBucket"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "AllowWAFManagement",
+            "Effect": "Allow",
+            "Action": [
+                "wafv2:*",
+                "cloudwatch:PutMetricData",
+                "logs:*"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "AllowKMSForStateBucket",
+            "Effect": "Allow",
+            "Action": [
+                "kms:Decrypt",
+                "kms:Encrypt",
+                "kms:GenerateDataKey*",
+                "kms:DescribeKey"
+            ],
+            "Resource": "${kms_key_arn}"
+        }
+    ]
+}

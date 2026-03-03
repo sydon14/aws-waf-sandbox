@@ -3,16 +3,16 @@ Environment    = "dev"
 DeployColor    = "blue"
 CreatedBy      = "sydon.agbor@atos.net"
 AccountNumber  = "782557964167"
-AccountName    = "vsp"
+AccountName    = "Schev"
 Description    = "Sandbox: WAF deployment"
 EnvironmentTag = "sandbox"
 ServiceName="common-stack/waf"
 STATE_STORE = "vita-waf-tfstate-sydon"
 ROLE_ARN = "arn:aws:iam::884316347283:role/fedramp-mod-tfstate-bucket-access-role"
-waf_acl_name = "VSPAgencyIngressWAF-sandbox"
+waf_acl_name = "SCHEVAgencyIngressWAF-sandbox"
 waf_scope = "REGIONAL"
-web_acl_description = "Sandbox WAF for VSP ALB"
-elb_arn = "arn:aws:elasticloadbalancing:us-east-1:782557964167:loadbalancer/app/vsp-waf-test-alb/88965192cea12d8b"
+web_acl_description = "Sandbox WAF for SCHEV ALB"
+elb_arn = "arn:aws:elasticloadbalancing:us-east-1:782557964167:loadbalancer/app/schev-waf-test-alb/43d6bc8084ecdb3a"
 waf_association = false
 # WAF variables
 allow_rule_priority = 2
@@ -27,9 +27,9 @@ vpc_tags = {
   project-name = "aws-waf-sandbox"
   owner        = "Sydon"
   environment  = "dev"
-  agency       = "vsp"
+  agency       = "schev"
 }
 logs_tags = {
   project = "aws-waf-sandbox"
-  agency  = "vsp"
+  agency  = "schev"
 }

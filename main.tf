@@ -1,13 +1,3 @@
-terraform {
-  backend "s3" {
-    bucket         = "vita-waf-tfstate-sydon"
-    key            = "global/s3/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "vita-waf-tf-locks"
-    encrypt        = true
-    profile        = "waf-demo"
-  }
-}
 
 locals {
   vpc_tags = var.vpc_tags

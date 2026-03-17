@@ -3,7 +3,7 @@ Environment    = "dev"
 DeployColor    = "blue"
 CreatedBy      = "sydon.agbor@atos.net"
 AccountNumber  = "782557964167"
-AccountName    = "Schev"
+AccountName    = "schev"
 Description    = "Sandbox: WAF deployment"
 EnvironmentTag = "sandbox"
 ServiceName="common-stack/waf"
@@ -13,7 +13,7 @@ waf_acl_name = "SCHEVAgencyIngressWAF-sandbox"
 waf_scope = "REGIONAL"
 web_acl_description = "Sandbox WAF for SCHEV ALB"
 elb_arn = "arn:aws:elasticloadbalancing:us-east-1:782557964167:loadbalancer/app/schev-waf-test-alb/43d6bc8084ecdb3a"
-waf_association = false
+waf_association = true
 # WAF variables
 allow_rule_priority = 2
 waf_geo_match_country_codes = ["US"]

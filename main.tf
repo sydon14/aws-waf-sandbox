@@ -1,3 +1,4 @@
+
 locals {
   vpc_tags = var.vpc_tags
 }

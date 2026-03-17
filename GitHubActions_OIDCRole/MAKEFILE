@@ -1,55 +1,96 @@
-# AWS Region
-REGION ?= $(shell aws configure get region || echo "us-east-1") 
+# =========================
+# GitHubActions_OIDCRole Makefile
+# =========================
 
-# The Environment, i.e dev/qa/prod
-ENV ?= $(shell aws configure get env || echo "prod")
+# --- Defaults (override on command line if needed) ---
+REGION      ?= us-east-1
+ENV         ?= dev
+COLOR       ?= blue
+ACCOUNT     ?= githubActions
 
-# The deploy color
-COLOR ?= $(shell aws configure get deploy-color || echo "blue")
+# Backend mode:
+#   local = uses AWS_PROFILE for backend
+#   oidc  = no profile; GitHub Actions should provide creds via OIDC
+BACKEND_MODE ?= local
 
-# Account
-ACCOUNT ?= $(shell aws configure get account|| echo "githubActions")
-## get dir
+# Local profile name (only used when BACKEND_MODE=local)
+AWS_PROFILE ?= waf-demo
+
+# DynamoDB lock table (optional but recommended)
+DYNAMODB_TABLE ?= vita-waf-tf-locks
+
+# --- Paths ---
 MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-# Terraform Variables
-VAR_FILE ?= $(MAKEFILE_DIR)vars/$(ACCOUNT)-$(ENV)-$(COLOR)-$(REGION).tfvars
+VAR_FILE     ?= $(MAKEFILE_DIR)vars/$(ACCOUNT)-$(ENV)-$(COLOR)-$(REGION).tfvars
 
-ServiceName ?= $(shell grep '^ServiceName' $(VAR_FILE) | sed 's/.*= *"//;s/"//')
-STATE_STORE ?= $(shell grep '^STATE_STORE' $(VAR_FILE) | sed 's/.*= *"//;s/"//')
-ROLE_ARN    ?= $(shell grep '^ROLE_ARN' $(VAR_FILE) | sed 's/.*= *"//;s/"//')
+# --- Pull selected backend values from tfvars ---
+ServiceName ?= $(shell grep '^ServiceName' $(VAR_FILE) | awk -F'=' '{print $$2}' | tr -d ' "')
+STATE_STORE ?= $(shell grep '^STATE_STORE' $(VAR_FILE) | awk -F'=' '{print $$2}' | tr -d ' "')
+
+# Optional in tfvars (used if you choose to do assume_role backend later)
+ROLE_ARN    ?= $(shell grep '^ROLE_ARN' $(VAR_FILE) 2>/dev/null | awk -F'=' '{print $$2}' | tr -d ' "' )
 
 print_var_file:
-	@echo $(VAR_FILE)
-
+	@echo "VAR_FILE=$(VAR_FILE)"
+	@echo "BACKEND_MODE=$(BACKEND_MODE)"
+	@echo "AWS_PROFILE=$(AWS_PROFILE)"
+	@echo "DYNAMODB_TABLE=$(DYNAMODB_TABLE)"
+	@echo "STATE_STORE=$(STATE_STORE)"
+	@echo "ServiceName=$(ServiceName)"
 
 include $(VAR_FILE)
 
+# -------------------------
+# Terraform workspace helpers
+# -------------------------
 _var_file:
 	@$(MAKE) _workspace_create ws=$(AccountName)-$(ENV)-$(COLOR)-$(REGION)
-	@echo "Using var file $(VAR_FILE)"
+	@echo "Using var file: $(VAR_FILE)"
 
 _workspace_create:
 	@terraform workspace new $(ws) > /dev/null 2>&1 || terraform workspace select $(ws) > /dev/null 2>&1 || true
-	#@try {terraform workspace new $ws *>$null -or terraform workspace select $ws *>$null} catch {# Silently continue}
+
 _workspace_show:
 	@echo "Using workspace:"
 	@terraform workspace show
 
-_create_state_bucket:
-	@printf "terraform { \nbackend \"s3\" { \nbucket=\"$(STATE_STORE)\" \nkey=\"$(ServiceName)/root_tfstate.json\" \nregion=\"$(REGION)\" \nassume_role = { \nrole_arn = \"$(ROLE_ARN)\" \n} \n} \n}" > backend.tf
+# -------------------------
+# Backend generation
+# -------------------------
+
+_create_backend_local:
+	@printf 'terraform {\n  backend "s3" {\n    bucket         = "%s"\n    key            = "%s/root_tfstate.json"\n    region         = "%s"\n    dynamodb_table = "%s"\n    encrypt        = true\n    profile        = "%s"\n  }\n}\n' \
+	"$(STATE_STORE)" "$(ServiceName)" "$(REGION)" "$(DYNAMODB_TABLE)" "$(AWS_PROFILE)" > backend.tf
+
+_create_backend_oidc:
+	@printf 'terraform {\n  backend "s3" {\n    bucket         = "%s"\n    key            = "%s/root_tfstate.json"\n    region         = "%s"\n    dynamodb_table = "%s"\n    encrypt        = true\n  }\n}\n' \
+	"$(STATE_STORE)" "$(ServiceName)" "$(REGION)" "$(DYNAMODB_TABLE)" > backend.tf
+
+_create_backend:
+	@if [ "$(BACKEND_MODE)" = "oidc" ]; then \
+	  $(MAKE) _create_backend_oidc; \
+	else \
+	  $(MAKE) _create_backend_local; \
+	fi
 
 _tf_init:
 	@terraform init -var-file=$(VAR_FILE)
 
 _check_init:
-	@if [ -d ".terraform" ]; then if [ -f "backend.tf" ]; then echo "Terraform init exists."; else make _create_state_bucket; fi; else make init; fi
+	@if [ -d ".terraform" ]; then \
+	  if [ -f "backend.tf" ]; then \
+	    echo "Terraform init exists."; \
+	  else \
+	    $(MAKE) _create_backend; \
+	  fi; \
+	else \
+	  $(MAKE) init; \
+	fi
 
-init: _create_state_bucket _tf_init _var_file _workspace_show
-
-create: init apply
-
-_plan: init _check_init _var_file
-	@terraform plan -var-file=$(VAR_FILE)
+# -------------------------
+# Public targets
+# -------------------------
+init: _create_backend _tf_init _var_file _workspace_show
 
 plan: init _check_init _var_file
 	@terraform plan -out=plan.tfplan -var-file=$(VAR_FILE)
@@ -57,9 +98,9 @@ plan: init _check_init _var_file
 apply: _check_init _var_file
 	@terraform apply -var-file=$(VAR_FILE)
 
-delete: _check_init _var_file
+destroy: _check_init _var_file
 	@terraform destroy -var-file=$(VAR_FILE) -lock=false
-	
+
 output:
 	@terraform output
 

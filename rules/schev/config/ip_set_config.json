@@ -3,6 +3,6 @@
   "description": "IP set for SCHEV WAF sandbox",
   "ip_address_version": "IPV4",
   "addresses": [
-    "104.129.206.113/32"
+    "71.70.238.28/32"
   ]
 }

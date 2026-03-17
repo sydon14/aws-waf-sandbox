@@ -19,7 +19,7 @@ allow_rule_priority = 2
 waf_geo_match_country_codes = ["US"]
 create_resource_policy = false
 log_retention_days = 30
-ip_addresses = ["104.129.206.113/32"]
+# ip_addresses = ["104.129.206.113/32"]
 #     "20.253.118.128/28",
 #     "209.112.104.0/22"
 #   ]

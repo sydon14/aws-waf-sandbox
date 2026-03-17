@@ -1,0 +1,8 @@
+{
+  "name": "schev-ip-set",
+  "description": "IP set for SCHEV WAF sandbox",
+  "ip_address_version": "IPV4",
+  "addresses": [
+    "104.129.206.113/32"
+  ]
+}
